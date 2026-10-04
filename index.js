@@ -171,8 +171,9 @@ app.get('/posts', verifyToken, async (req, res) => {
 
         // Select all post fields from the posts table, and the username field from the users table
         // Join on the id to know which post belongs to which user
-        // Only return the public posts, or
-        // Friends-only posts where only posts from users the current logged in user is a friend of
+        // Only return the public posts or friends-only posts
+        // The query will only show friends-only posts of authors who have added you as a friend
+        // to see their posts
         const result = await pool.query(`
             SELECT p.*, u.username AS username
             FROM posts p
@@ -263,5 +264,5 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Roundtable API listening on port ${PORT}`);
+    console.log(`Aeroscape API listening on port ${PORT}`);
 });
