@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS posts(
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
-    title TEXT NOT NULL,
+    title TEXT,
     content TEXT NOT NULL,
     likes INTEGER NOT NULL DEFAULT 0,
     visibility VARCHAR(20) NOT NULL DEFAULT 'public',
