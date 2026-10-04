@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aeroscape API</title>
+</head>
+    <body>
+        <h1>Aeroscape API</h1>
+        <p>All request and response bodies are JSON. Send requests with the header <code>Content-Type: application/json</code>.</p>
+        <p>Routes marked <b>Requires auth</b> need the header <code>Authorization: Bearer &lt;accessToken&gt;</code>. A missing, invalid or expired token returns <code>401</code> with an empty body.</p>
+        <p>Access tokens expire after 15 minutes. Refresh tokens expire after 7 days.</p>
+
+        <hr>
+
+        <h2>Authentication</h2>
+
+        <h3>POST /signup</h3>
+        <p>Creates a new account.</p>
+        <p><b>Body:</b></p>
+        <pre>{
+        "username": "string, 3 to 100 characters",
+        "email": "string, valid email",
+        "password": "string, at least 8 characters"
+        }</pre>
+        <p><b>Returns</b> <code>201</code>:</p>
+        <pre>{ "id": 1, "username": "...", "email": "...", "created_at": "..." }</pre>
+        <p><b>Errors:</b> <code>400</code> failed validation, <code>409</code> email already registered, <code>500</code> server error.</p>
+
+        <h3>POST /login</h3>
+        <p>Logs in and returns a pair of tokens.</p>
+        <p><b>Body:</b></p>
+        <pre>{ "email": "string", "password": "string" }</pre>
+        <p><b>Returns</b> <code>200</code>:</p>
+        <pre>{ "accessToken": "...", "refreshToken": "..." }</pre>
+        <p><b>Errors:</b> <code>404</code> no account with that email, <code>401</code> wrong password, <code>500</code> server error.</p>
+
+        <h3>POST /refresh</h3>
+        <p>Exchanges a refresh token for a new access token.</p>
+        <p><b>Body:</b></p>
+        <pre>{ "refreshToken": "string" }</pre>
+        <p><b>Returns</b> <code>200</code>:</p>
+        <pre>{ "accessToken": "..." }</pre>
+        <p><b>Errors:</b> <code>401</code> refresh token missing, invalid or expired.</p>
+
+        <hr>
+
+        <h2>Posts</h2>
+
+        <h3>POST /posts</h3>
+        <p><b>Requires auth.</b> Creates a post by the logged-in user.</p>
+        <p><b>Body:</b></p>
+        <pre>{
+        "title": "string, optional",
+        "content": "string, required",
+        "visibility": "public | friends_only"
+        }</pre>
+        <p><b>Returns</b> <code>201</code>:</p>
+        <pre>{
+        "message": "Post added successfully",
+        "result": { "id": 1, "user_id": 1, "title": "...", "content": "...", "visibility": "...", ... }
+        }</pre>
+        <p><b>Errors:</b> <code>404</code> content is missing, <code>500</code> server error.</p>
+
+        <h3>GET /posts</h3>
+        <p><b>Requires auth.</b> Returns the posts the logged-in user can see:</p>
+        <ul>
+            <li>all public posts</li>
+            <li>the user's own posts</li>
+            <li>friends-only posts from authors who have added the user as a friend</li>
+        </ul>
+        <p><b>Body:</b> none</p>
+        <p><b>Returns</b> <code>200</code>: an array of posts, each with the author's username.</p>
+        <pre>[
+        { "id": 1, "user_id": 1, "title": "...", "content": "...", "visibility": "...", "username": "...", ... }
+        ]</pre>
+        <p><b>Errors:</b> <code>500</code> server error.</p>
+
+        <hr>
+
+        <h2>Users</h2>
+
+        <h3>GET /users</h3>
+        <p><b>Requires auth.</b> Returns every user except the logged-in user.</p>
+        <p><b>Body:</b> none</p>
+        <p><b>Returns</b> <code>200</code>:</p>
+        <pre>[
+        { "id": 2, "username": "...", "email": "...", "created_at": "..." }
+        ]</pre>
+        <p><b>Errors:</b> <code>500</code> server error.</p>
+
+        <hr>
+
+        <h2>Friendships</h2>
+        <p>Friendships are one-way. Adding someone lets them see your friends-only posts.</p>
+
+        <h3>POST /friendships</h3>
+        <p><b>Requires auth.</b> Adds a user as a friend of the logged-in user.</p>
+        <p><b>Body:</b></p>
+        <pre>{ "friend_id": 2 }</pre>
+        <p><b>Returns</b> <code>201</code>:</p>
+        <pre>{
+        "message": "Friend added successfully",
+        "result": { "user_id": 1, "friend_id": 2, ... }
+        }</pre>
+        <p><b>Errors:</b> <code>500</code> server error, including when the friendship already exists.</p>
+
+        <h3>GET /friendships</h3>
+        <p><b>Requires auth.</b> Returns everyone the logged-in user has added.</p>
+        <p><b>Body:</b> none</p>
+        <p><b>Returns</b> <code>200</code>:</p>
+        <pre>[
+        { "user_id": 1, "friend_id": 2, ... }
+        ]</pre>
+        <p><b>Errors:</b> <code>500</code> server error.</p>
+
+        <h3>DELETE /friendships/:id</h3>
+        <p><b>Requires auth.</b> Removes a friend. <code>:id</code> is the friend's user ID.</p>
+        <p><b>Body:</b> none</p>
+        <p><b>Returns</b> <code>200</code>:</p>
+        <pre>{
+        "message": "Friend removed successfully",
+        "result": { "user_id": 1, "friend_id": 2, ... }
+        }</pre>
+        <p><b>Errors:</b> <code>404</code> the logged-in user hasn't added this user, <code>500</code> server error.</p>
+
+        <hr>
+
+        <p>Any other route returns <code>404</code> with <code>{ "error": "Route not found" }</code>.</p>
+        <p>Every error response except the <code>401</code>s from auth-protected routes has the shape <code>{ "error": "message" }</code>.</p>
+    </body>
+</html>
